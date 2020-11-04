@@ -138,7 +138,7 @@ sealed class TypeMapNode(
  * The only type in Hawk currently is `int`, so as an exercise, some may want to expand upon this and add other types.
  */
 class TypeMap{
-    private val nodes = arrayListOf<TypeMapNode>()
+    val nodes = arrayListOf<TypeMapNode>()
     private var nextId = 0
 
     /**

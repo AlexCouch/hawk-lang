@@ -1,8 +1,13 @@
 let
-    a =
-        let
-            b = 5
-        do
-            b * 2
+    rise = 5
+    run = 3
 do
-    a * 2
+    let
+        d_rise = rise + 1
+        d_run = run + 1
+    do
+        let
+            diff_rise = d_rise - rise
+            diff_run = d_run - run
+        do
+            diff_rise / diff_run

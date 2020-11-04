@@ -54,7 +54,7 @@ class SymbolTable{
     /**
      * A stack of scopes, which are never freed but are instead kept for reuse during other passes.
      */
-    private val scopeStack = LinkedList<Scope>()
+    val scopeStack = LinkedList<Scope>()
 
     /**
      * Which index in the [scopeStack] we are currently working in. This is used for defining and finding symbols
