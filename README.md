@@ -1,11 +1,66 @@
 # Introduction
-Hawk is a hypothetical language being designed by Alex Couch which is inspired by Homotopy Type Theory. The basis of this theory is the univalence axiom, which gives rise to the notion that two types are equivalent if their internal structure are the same or at least shared in some way. The idea of univalence is to let go of type based abstractions and to simply rely on structural similarities rather than using type markers or polymorphism. Polymorphism rises when a type A is structurally similar either as a subtype, where all of A's structure is within the structure of type B, or exact equivalence, where all of A's structure is the same as B's structure. In this way, we can have the same kind of polymorphism without the need of dynamic dispatching because as long as A and B have the same fields, the same methods, the same structure altogether, then we can infer that they are equivalent, regardless of whether they are subtypes to a common type, polymorphic to each other, covariant siblings, etc. This simplifies compiling and running and allows a language's runtime to avoid the need to have dynamic dispatching in any way.
+Hawk is an experimental programming language compiler and virtual machine, made with the intent to provide a practice project for anyone hoping to get into programming language engineering and compiler/interpreter/vm development.
 
-## Univalence Axiom
-Univalence axiom is the axiom that gives us the power to make two types equivalent by looking at their structures. If we have a type called A and it has the fields `str: String, num: Int, thing: B` and type B has the fields `str: String, num: Int`, then these two structures give us the ability to infer two things about these types:
+## Syntax
+The syntax includes variable binding and do blocks. The final block in the code
+is the block whose last expression computed on the stack to be printed out to the console.
+```
+let
+    a = 5
+    b = 3
+    c = 8
+do
+    a + b * c
+```
+This code will compute b * c first followed by that + a, giving us 29.
+```
+let
+    a = 5
+    b =
+        let
+            c = 10
+        do
+            c + a
+do
+    b * 2
+```
+Computes b * 2, by frist computing b as c (10) + a (5) = 15, which then yeilds 30.
 
-a) The type *A* has paths that connect it's identity *Id(A)* to the fields of type `String`, `Int`, and `B`. The type *B* has paths from it's identity *Id(B)* to fields of type `String` and `Int`. The result is that type *B* has all its paths in the type *A*, meanwhile not all paths in *A* are in *B*, making *B* a subset of *A*.
+## Pipeline
+The entire pipeline is as follows:
 
-b) If type *A* did not have the field of type *B* then it would be structurally equivalent to *B*, allowing for functions to have parameters of type A but be relaxed and allow anything structurally equivalent to *A*, such as *B*. This then means that passing an instance of *B* into the parameter of type *A* (or univalent to *A*) is permissible by the compiler.
+- Tokenizer
+- Parser
+    - This is an LL combinator like parser which implies a parse tree by immediate traversal of grammar structure. This will yields an abstract syntax tree if the grammar is correct.
+- Symbol Resolution
+    - This will resolve all symbols by emulating scopes and scope resolution and ensurnig that all variable references exist at the time of the reference.
+- Type Checking/Inference
+    - This pass first constructs a type map of all the variables by inferring their types using a dept-first search algorithm of all variables.
+    - This pass secondly infers variables by reference tracing. After all variables initialized to integer constants have been inferred, all variables referencing those variables will be inferred to the same type.
+    - All variables that reference variables that reference variables will be typed to their inferred types as well.
+    - This is called a Hindley-Milner inference system. This is a bottom-up, dept-first algorithm for inferring the deepest variables that are initialized to constants before inferring higher-level variables that reference other variables.
+- Stack Emulation and Code Generation
+    - This pass emulates the stack by emulating what will be on the stack when it reaches an instruction.
+    - By having its own stack, we can generate code that is name-less and uses only positions on the stack.
+    - This is useful for prebuilding an executable before passing it into the VM
 
-## 
+## VM
+The virtual machine is very simple. It contains a handful of instructions that manipulates the stack. There is no heap, only the stack.
+The VM has a single register for saving values on the top of the stack. This is useful for at the end of a `do` block so that we don't accidentally pop off the value being set to its parent.
+
+```
+let
+    a =
+        let
+            b = 5
+        do
+            b * 2
+do
+    a * 2
+```
+This will take the result of b * 2 and save it in the register using the `SAVE` instruction.
+Then, `a` will be initialized to that saved value by using the `LOAD` instruction.
+The final `do` block will take that initialized `a` variable (init'd to b * 2, which is 5 * 2 = 10)
+...and multiply it by 2.
+The final result of a * 2 will be saved after leaving the do block, and because there's no more code to execute,
+...the VM will print that out to the console. So this code will print out 20.
