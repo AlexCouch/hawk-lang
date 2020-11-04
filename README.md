@@ -1,0 +1,11 @@
+# Introduction
+Hawk is a hypothetical language being designed by Alex Couch which is inspired by Homotopy Type Theory. The basis of this theory is the univalence axiom, which gives rise to the notion that two types are equivalent if their internal structure are the same or at least shared in some way. The idea of univalence is to let go of type based abstractions and to simply rely on structural similarities rather than using type markers or polymorphism. Polymorphism rises when a type A is structurally similar either as a subtype, where all of A's structure is within the structure of type B, or exact equivalence, where all of A's structure is the same as B's structure. In this way, we can have the same kind of polymorphism without the need of dynamic dispatching because as long as A and B have the same fields, the same methods, the same structure altogether, then we can infer that they are equivalent, regardless of whether they are subtypes to a common type, polymorphic to each other, covariant siblings, etc. This simplifies compiling and running and allows a language's runtime to avoid the need to have dynamic dispatching in any way.
+
+## Univalence Axiom
+Univalence axiom is the axiom that gives us the power to make two types equivalent by looking at their structures. If we have a type called A and it has the fields `str: String, num: Int, thing: B` and type B has the fields `str: String, num: Int`, then these two structures give us the ability to infer two things about these types:
+
+a) The type *A* has paths that connect it's identity *Id(A)* to the fields of type `String`, `Int`, and `B`. The type *B* has paths from it's identity *Id(B)* to fields of type `String` and `Int`. The result is that type *B* has all its paths in the type *A*, meanwhile not all paths in *A* are in *B*, making *B* a subset of *A*.
+
+b) If type *A* did not have the field of type *B* then it would be structurally equivalent to *B*, allowing for functions to have parameters of type A but be relaxed and allow anything structurally equivalent to *A*, such as *B*. This then means that passing an instance of *B* into the parameter of type *A* (or univalent to *A*) is permissible by the compiler.
+
+## 

@@ -1,0 +1,9 @@
+let
+    a = 5
+    b =
+        let
+            c = 10
+        do
+            c + a
+do
+    b * 2
