@@ -16,6 +16,11 @@ class CodegenPass: ASTVisitorVoid<BCTree>{
         visitLet(errorHandler, astNode, data)
     }
 
+    /**
+     * Enter and push a new block onto the stack.
+     * Visit all the variables
+     * Visit the do block
+     */
     override fun visitLet(errorHandler: ErrorHandling, letNode: ASTNode<*>, data: BCTree){
         data.enterBlock()
         data.pushBlock()
@@ -31,6 +36,13 @@ class CodegenPass: ASTVisitorVoid<BCTree>{
         visitDo(errorHandler, doBlock, data)
     }
 
+    /**
+     * Visit the expression
+     * Generate a save
+     * Generate the popping of the current block
+     * Generate the load
+     * Leave the current block
+     */
     override fun visitDo(errorHandler: ErrorHandling, doNode: ASTNode<*>, data: BCTree){
         visitExpression(errorHandler, doNode.children[0], data)
         data.writeSave()
@@ -39,6 +51,12 @@ class CodegenPass: ASTVisitorVoid<BCTree>{
         data.leaveBlock()
     }
 
+    /**
+     * Get the identifier
+     * Visit the assigned expression
+     * Check if the top of the stack needs to be renamed
+     * Otherwise, push a new variable onto the stack
+     */
     override fun visitVar(errorHandler: ErrorHandling, varNode: ASTNode<*>, data: BCTree){
         val ident = varNode.children[0]
         val expr = varNode.children[1]
@@ -55,6 +73,19 @@ class CodegenPass: ASTVisitorVoid<BCTree>{
         }
     }
 
+    /**
+     * If it's a VarRef:
+     *      Get the referenced variable's identifier, and generate a read
+     * If it's an IntLiteral:
+     *      Generate a push instruction
+     * If it's a binary expression:
+     *      Visit the left and right expressions
+     *      Check if we need to push a new variable for the right or the left
+     *      Solo integer constants are not represented by names but will still need to be represented on the stack
+     *      Write a binary instruction
+     * If it's a Let:
+     *      Visit the let
+     */
     override fun visitExpression(errorHandler: ErrorHandling, exprNode: ASTNode<*>, data: BCTree){
         when(exprNode.astKind){
             ASTKind.VarRef -> {

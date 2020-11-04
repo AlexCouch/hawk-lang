@@ -8,6 +8,10 @@ class TypeMapCreator: ASTVisitor2<SymbolTable, TypeMap, ASTNode<*>?> {
     override fun visitFile(errorHandler: ErrorHandling, astNode: ASTNode<*>, data1: SymbolTable, data2: TypeMap) =
             visitLet(errorHandler, astNode, data1, data2)
 
+    /**
+     * Enter the next scope, get the variables and visit them. Visit the do block, and return the current ast node.
+     * This does not do any ast transformations which is why it's okay to return the original ast node [letNode]
+     */
     override fun visitLet(errorHandler: ErrorHandling, letNode: ASTNode<*>, data1: SymbolTable, data2: TypeMap): ASTNode<*>? {
         data1.enterScope()
         val children = letNode.children
@@ -23,12 +27,19 @@ class TypeMapCreator: ASTVisitor2<SymbolTable, TypeMap, ASTNode<*>?> {
         return letNode
     }
 
+    /**
+     * Visit the given expression and leave the current scope.
+     */
     override fun visitDo(errorHandler: ErrorHandling, doNode: ASTNode<*>, data1: SymbolTable, data2: TypeMap): ASTNode<*>? {
         visitExpression(errorHandler, doNode.children[0], data1, data2)
         data1.leaveScope()
         return doNode
     }
 
+    /**
+     * Get the identifier of the current variable node. Get its symbol, and add it as a root in the type map.
+     * Take its expression and visit it.
+     */
     override fun visitVar(errorHandler: ErrorHandling, varNode: ASTNode<*>, data1: SymbolTable, data2: TypeMap): ASTNode<*>? {
         val ident = varNode.children[0]
         if(ident.astKind != ASTKind.Identifier){
@@ -47,6 +58,27 @@ class TypeMapCreator: ASTVisitor2<SymbolTable, TypeMap, ASTNode<*>?> {
         return varNode
     }
 
+    /**
+     * Resolves the types of parents for a given child node. This is useful for walking back up the tree to infer the
+     * types of parent nodes. For example, if we have `a` be `int`, and `b` also be `int`, and `c` reference both `a` and `b`,
+     * then we want to walk back up from the references in c, to the variable c's node and infer its type directly in
+     * the type map. This is also useful for inferring the type of variables from within let-do blocks, where the
+     * expression of a do block is typed, and can then be used to infer the type of the variable its assigned to.
+     *
+     * ```
+     *  let
+     *      a = 5
+     *      b =
+     *          let
+     *              c = a
+     *          do
+     *              c
+     *  do
+     *      a + b
+     * ```
+     * `b` will be typed to whatever the expression of its last `do` block is, which is the type of `c`. `c` is typed
+     * to whatever `a` is typed to, which is `int`.
+     */
     private fun resolveTypeNodesForChild(errorHandler: ErrorHandling, astNode: ASTNode<*>, typeMap: TypeMap, block: (TypeMapNode) -> TypeMapNode): ASTNode<*>?{
         val parent = astNode.parent ?: return null
         return when(parent.astKind){
@@ -68,6 +100,10 @@ class TypeMapCreator: ASTVisitor2<SymbolTable, TypeMap, ASTNode<*>?> {
         }
     }
 
+    /**
+     * Resolves the types of expressions and does inference on their parents.
+     * @see [resolveTypeNodesForChild]
+     */
     override fun visitExpression(errorHandler: ErrorHandling, exprNode: ASTNode<*>, data1: SymbolTable, data2: TypeMap): ASTNode<*>? {
         return when(exprNode.astKind){
             ASTKind.IntLiteral -> {
@@ -77,6 +113,8 @@ class TypeMapCreator: ASTVisitor2<SymbolTable, TypeMap, ASTNode<*>?> {
                     }
                 }
             }
+            ///Checks if the current var ref has been typed, and if not, yield an error, otherwise, use it to infer the
+            ///type of this expression's parent, by transforming the parent with the type of the variable being reference.
             ASTKind.VarRef -> {
                 resolveTypeNodesForChild(errorHandler, exprNode, data2){
                     val varRefName = exprNode.data as String
@@ -101,12 +139,15 @@ class TypeMapCreator: ASTVisitor2<SymbolTable, TypeMap, ASTNode<*>?> {
                     }
                 }
             }
+            ///Does type checking and inference on both the left and right nodes by recursing to [visitExpression]
             ASTKind.BinaryPlus, ASTKind.BinaryMinus, ASTKind.BinaryMul, ASTKind.BinaryDiv -> {
                 val left = exprNode.children.getOrNull(0) ?: return null
                 visitExpression(errorHandler, left, data1, data2)
                 val right = exprNode.children.getOrNull(0) ?: return null
                 visitExpression(errorHandler, right, data1, data2)
             }
+            ///Calls [visitLet] to do type checking on variables and its associated do block, which then results
+            ///in a type inference on the parent node of this let-do block.
             ASTKind.Let -> {
                 visitLet(errorHandler, exprNode, data1, data2)
             }

@@ -2,6 +2,14 @@ package parser
 
 import ErrorHandling
 
+/**
+ * A generic AST visitor. This provides method for traversing and visiting certain [ASTNode]'s.
+ * Since every kind of node is identified by [ASTKind], this could all be shrunk down to just one
+ * visitor method, however, separating the individual pieces out helps with having a piece of mind, and a clear
+ * indication of where each node is processed, making the code easier manage.
+ *
+ * However, be aware that when changing the syntax, this interface and all its implementations because obsolete.
+ */
 interface ASTVisitor<in Data, out Ret> {
     fun visitFile(errorHandler: ErrorHandling, astNode: ASTNode<*>, data: Data): Ret
     fun visitLet(errorHandler: ErrorHandling, letNode: ASTNode<*>, data: Data): Ret
@@ -16,8 +24,15 @@ interface ASTVisitor<in Data, out Ret> {
     fun visitInteger(errorHandler: ErrorHandling, divNode: ASTNode<*>, data: Data): Ret
 }
 
+/**
+ * A version of the generic [ASTVisitor] whose visitor return type is Unit (aka void)
+ */
 interface ASTVisitorVoid<in Data>: ASTVisitor<Data, Unit>
 
+/**
+ * A generic ASTVisitor extension that provides two input data paramters, which is useful for transferring data of one
+ * pass to another pass (see [typeck.TypeMapCreator].
+ */
 interface ASTVisitor2<in Data1, in Data2, out Ret> {
     fun visitFile(errorHandler: ErrorHandling, astNode: ASTNode<*>, data1: Data1, data2: Data2): Ret
     fun visitLet(errorHandler: ErrorHandling, letNode: ASTNode<*>, data1: Data1, data2: Data2): Ret
@@ -32,4 +47,7 @@ interface ASTVisitor2<in Data1, in Data2, out Ret> {
     fun visitInteger(errorHandler: ErrorHandling, divNode: ASTNode<*>, data1: Data1, data2: Data2): Ret
 }
 
+/**
+ * The same as [ASTVisitorVoid] but with [ASTVisitor2].
+ */
 interface ASTVisitor2Void<in Data1, in Data2>: ASTVisitor2<Data1, Data2, Unit>

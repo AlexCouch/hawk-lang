@@ -47,7 +47,7 @@ enum class Bytecode {
     READ,
 
     /**
-     * Saves the top value on the stack in a 'save' register, which can then be loaded using [LOAD]
+     * Saves the top value on the stack in a 'save' register, followed by it being popped, which can then be loaded using [LOAD]
      */
     SAVE,
 
