@@ -33,7 +33,7 @@ The entire pipeline is as follows:
 - Parser
     - This is an LL combinator like parser which implies a parse tree by immediate traversal of grammar structure. This will yields an abstract syntax tree if the grammar is correct.
 - Symbol Resolution
-    - This will resolve all symbols by emulating scopes and scope resolution and ensurnig that all variable references exist at the time of the reference.
+    - This will resolve all symbols by emulating scopes and scope resolution and ensuring that all variable references exist at the time of the reference.
 - Type Checking/Inference
     - This pass first constructs a type map of all the variables by inferring their types using a dept-first search algorithm of all variables.
     - This pass secondly infers variables by reference tracing. After all variables initialized to integer constants have been inferred, all variables referencing those variables will be inferred to the same type.
